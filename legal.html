@@ -24,24 +24,26 @@ nav a{margin-right:16px}
 <main>
 <p><a href="./">Back to the game</a></p>
 <h1>Top Shelf: privacy, terms and refunds</h1>
-<p class="muted">Last updated November 12, 2026. Top Shelf Hockey Trivia Game ("Top Shelf") is run by Alex Eriksen in Denmark. Contact: <a href="mailto:topshelfhockeytrivia@gmail.com">topshelfhockeytrivia@gmail.com</a>.</p>
+<p class="muted">Last updated November 12, 2026 (sign-in added). Top Shelf Hockey Trivia Game ("Top Shelf") is run by Alex Eriksen in Denmark. Contact: <a href="mailto:topshelfhockeytrivia@gmail.com">topshelfhockeytrivia@gmail.com</a>.</p>
 <nav><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#refunds">Refunds</a></nav>
 
 <h2 id="privacy">Privacy policy</h2>
 <p>Top Shelf collects as little as it can. There are no accounts, no ads and no analytics.</p>
 
-<p><b>What is stored in your browser.</b> A random player ID (a long code that does not contain your name or email), plus your result for the day. This lets the game remember that you played and, if you buy it, recognise your purchase. It stays on your device until you clear your browser data.</p>
+<p><b>What is stored in your browser.</b> A random player ID (a long code that does not contain your name or email), your result for the day and, if you sign in, your sign-in session. This lets the game remember that you played and, if you buy it, recognise your purchase. It stays on your device until you clear your browser data.</p>
 
 <p><b>What is stored on our servers.</b></p>
 <ul>
 <li>For each question you answer: your random player ID, the date and the question. This stops the same player from being counted twice in a day.</li>
 <li>Totals of how many players gave each answer. These totals are not linked to you.</li>
-<li>If you buy unlimited mode: your player ID, the Stripe payment reference and the email address you gave at checkout, so we can unlock the mode and help you if something goes wrong.</li>
+<li>If you sign in: your email address, kept by our sign-in provider (Supabase) so we can email you a one-time code and recognise your purchase on any device. Signed-in answers are recorded under your account ID instead of the random player ID.</li>
+<li>If you buy unlimited mode: your account ID, the Stripe payment reference and the email address you gave at checkout, so we can unlock the mode and help you if something goes wrong.</li>
 </ul>
 
 <p><b>Who processes data for us.</b></p>
 <ul>
-<li>Supabase stores the game data above.</li>
+<li>Supabase stores the game data above and handles sign-in.</li>
+<li>An email delivery service sends your one-time sign-in code.</li>
 <li>Stripe handles payment. We never see or store your card details.</li>
 <li>GitHub hosts this website. Like any web host, it sees your IP address when you load the page.</li>
 <li>Google Fonts supplies the game's typeface, so your browser contacts Google when the page loads.</li>
@@ -58,7 +60,7 @@ nav a{margin-right:16px}
 <li><b>What it is.</b> Top Shelf is a hockey trivia game for entertainment. Questions, accepted answers and rarity scores are our own work and may contain mistakes. Scores have no cash value.</li>
 <li><b>Not affiliated.</b> Top Shelf is an independent fan project. It is not affiliated with, endorsed by or sponsored by the National Hockey League, its teams, or any player. Team and player names are used only to identify them and belong to their owners.</li>
 <li><b>Fair play.</b> Please do not use bots, scripts or tricks to inflate answer counts or scores, or to interfere with the service. We may block access or reset counts if you do.</li>
-<li><b>Unlimited mode.</b> A one-time payment of $5 USD unlocks unlimited rounds for the player ID stored in the browser you bought it in. It is not a subscription. Clearing your browser data or changing browsers or devices can remove access, so email topshelfhockeytrivia@gmail.com with your payment details and we will help restore it.</li>
+<li><b>Unlimited mode.</b> A one-time payment of $5 USD unlocks unlimited rounds for the email account you are signed in with when you buy. It is not a subscription. Sign in with the same email on any device to use it. If it does not unlock, email topshelfhockeytrivia@gmail.com with your payment details and we will fix it.</li>
 <li><b>Availability.</b> The game is provided as it is. We may change it, pause it or shut it down. If we shut it down permanently, we will offer refunds to anyone who bought unlimited mode in the previous 12 months.</li>
 <li><b>Liability.</b> To the extent the law allows, we are not liable for indirect or lost-profit losses from using the game, and our total liability is limited to the amount you paid us. Nothing here limits rights you have under consumer law that cannot be excluded.</li>
 <li><b>Law.</b> These terms are governed by the law of Denmark, without taking away any mandatory consumer rights where you live.</li>
