@@ -43,6 +43,7 @@ button.alt{background:var(--surface);color:var(--ink);border:2px solid var(--lin
 .log .t0{background:var(--muted)}.log .t1{background:var(--blue);opacity:.45}.log .t2{background:var(--blue)}.log .t3{background:var(--red)}.log .t4{background:var(--gold)}
 .foot{max-width:520px;margin:0 auto;padding:0 20px 36px;font-size:14px}
 .foot a{margin-right:18px}
+.shot{display:block;width:100%;aspect-ratio:9/5;border-radius:18px;border:2px solid var(--line);margin:12px 0 0;box-shadow:var(--shadow);cursor:pointer;background:var(--ice)}
 pre{white-space:pre-wrap;font:inherit;background:var(--ice);padding:14px;border-radius:14px;font-size:16px;line-height:1.6}
 @media (max-width:360px){h1{font-size:50px}.q{font-size:24px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -190,6 +191,98 @@ no.onclick=function(){miss(v)}}
 document.getElementById("ok").onclick=submit;
 inp.onkeydown=function(e){if(e.key==="Enter")submit()};
 timer=setInterval(function(){left=TIME-(Date.now()-t0)/1000;document.getElementById("tb").style.width=Math.max(0,left/TIME*100)+"%";if(left<=0)done(true)},100)}
+var SHOT_RAF=0;
+var SHOTCFG={"-1":{dur:700,tx:350,ty:92,arc:0,tr:2,pw:16,lab:"Wide of the net"},0:{dur:1400,tx:176,ty:116,arc:0,tr:0,pw:14,lab:"Weak shot, easy save"},1:{dur:850,tx:196,ty:106,arc:4,tr:3,pw:26,lab:"Saved"},2:{dur:520,tx:140,ty:76,arc:6,tr:6,pw:40,lab:"Big save"},3:{dur:330,tx:228,ty:64,arc:6,tr:9,pw:52,lab:"GOAL!"},4:{dur:200,tx:218,ty:78,arc:2,tr:14,pw:66,lab:"THROUGH THE NET!"}};
+function shotLab(t){return SHOTCFG[t].lab}
+function shoot(t){
+var cv=document.getElementById("shot");if(!cv||!cv.getContext)return;
+cancelAnimationFrame(SHOT_RAF);
+var cfg=SHOTCFG[t];if(!cfg)return;
+var cs=getComputedStyle(document.documentElement),C={};
+["ink","red","blue","gold","ice","line","muted","bg"].forEach(function(k){C[k]=cs.getPropertyValue("--"+k).trim()});
+var bgc=C.bg.replace("#","");var dark=bgc.length>=6&&(parseInt(bgc.substr(0,2),16)*0.3+parseInt(bgc.substr(2,2),16)*0.6+parseInt(bgc.substr(4,2),16)*0.1)<90;
+var dpr=Math.min(window.devicePixelRatio||1,3),cw=cv.clientWidth||360;
+cv.width=Math.round(cw*dpr);cv.height=Math.round(cw*dpr*200/360);
+var ctx=cv.getContext("2d"),k=cv.width/360;
+var SX=180,SY=184,W0=300,TI=W0+cfg.dur,NX0=110,NX1=250,NY0=56,NY1=134;
+var jag=[];for(var j=0;j<14;j++)jag.push(.75+Math.random()*.5);
+var st={hist:[],shreds:[],spawned:0,last:0};
+function cl(v){return v<0?0:v>1?1:v}
+function eo(p){p=cl(p);return 1-(1-p)*(1-p)}
+function rr(x,y,w,h,r){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h)}
+function puckAt(ms){
+if(ms<W0)return{x:SX,y:SY,s:1,behind:false};
+var u=cl((ms-W0)/cfg.dur),x=SX+(cfg.tx-SX)*u,y=SY+(cfg.ty-SY)*u-cfg.arc*Math.sin(Math.PI*u),s=1-.55*u,b=false;
+if(ms>TI){var a=(ms-TI)/1000;s=.45;
+if(t===0){x=cfg.tx;y=cfg.ty+Math.min(16,a*a*260)}
+else if(t===1){x=cfg.tx-18*a;y=Math.min(cfg.ty-70*a+210*a*a,134)}
+else if(t===2){x=cfg.tx-150*a;y=cfg.ty-170*a+210*a*a}
+else if(t===3){x=cfg.tx+10*a;y=Math.min(cfg.ty+a*a*200,120);s=.4;b=true}
+else if(t===4){x=cfg.tx+60*a;y=cfg.ty-110*a;s=Math.max(.1,.45-.5*a);b=true}
+else{x=cfg.tx+200*a}}
+return{x:x,y:y,s:s,behind:b}}
+function goalieAt(ms){
+var g={gx:0,lean:0,dy:0},p;
+if(t===0){p=eo((ms-W0)/cfg.dur);g.gx=(cfg.tx-180)*.3*p;g.lean=.04*p}
+else if(t===1){p=eo((ms-W0)/cfg.dur);g.gx=(cfg.tx-180)*.7*p;g.lean=.12*p}
+else if(t===2){p=eo((ms-W0+80)/cfg.dur);g.gx=-44*p;g.lean=-.9*p;g.dy=-8*p}
+else if(t===3){p=eo((ms-W0-40)/(cfg.dur*1.6));g.gx=-46*p;g.lean=-.95*p;g.dy=-6*p}
+else if(t===4){p=eo((ms-TI)/300);g.lean=.55*p;g.dy=10*p;g.gx=14*p}
+return g}
+function drawGoalie(g){
+ctx.save();ctx.translate(180+g.gx,NY1+g.dy);ctx.rotate(g.lean);
+ctx.fillStyle="#e8eef5";ctx.strokeStyle=C.line;ctx.lineWidth=1.5;
+rr(-22,-26,16,26,5);ctx.fill();ctx.stroke();rr(6,-26,16,26,5);ctx.fill();ctx.stroke();
+ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(26,-30);ctx.lineTo(36,0);ctx.stroke();
+ctx.fillStyle=C.blue;rr(-22,-54,44,30,8);ctx.fill();
+ctx.fillStyle=C.red;ctx.fillRect(-22,-42,44,4);
+ctx.fillStyle="#e8eef5";ctx.beginPath();ctx.arc(0,-62,10,0,7);ctx.fill();ctx.strokeStyle=C.line;ctx.lineWidth=1.5;ctx.stroke();
+ctx.fillStyle=C.ink;ctx.fillRect(-6,-65,12,3);
+ctx.fillStyle="#c9a063";ctx.beginPath();ctx.arc(-30,-42,8,0,7);ctx.fill();
+ctx.fillStyle=C.ink;rr(25,-50,12,17,3);ctx.fill();
+ctx.restore()}
+function drawPuck(p){
+ctx.fillStyle="#0b0b0d";ctx.strokeStyle="#4a5361";ctx.lineWidth=1.2;
+ctx.beginPath();ctx.ellipse(p.x,p.y,11*p.s,6.5*p.s,0,0,7);ctx.fill();ctx.stroke()}
+function frame(ms){
+var a=(ms-TI)/1000,hit=ms>TI;
+ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,360,200);
+if(hit&&(t===3||t===4)){var amp=(t===4?9:3)*Math.exp(-a*(t===4?7:8));ctx.translate((Math.random()-.5)*amp,(Math.random()-.5)*amp)}
+var gr=ctx.createLinearGradient(0,0,0,200);gr.addColorStop(0,C.ice);gr.addColorStop(1,dark?"#1d3250":"#fff");
+ctx.fillStyle=gr;ctx.fillRect(-10,-10,380,220);
+ctx.fillStyle=C.line;ctx.fillRect(-10,-10,380,46);
+ctx.fillStyle=C.red;ctx.globalAlpha=.55;ctx.fillRect(-10,136,380,2);ctx.globalAlpha=1;
+var bul=0,R=0;
+if(hit){if(t===3)bul=18*Math.exp(-a*5)*Math.cos(a*28);if(t===4){bul=22*Math.exp(-a*8)*Math.cos(a*30);R=Math.min(30,a*600)}}
+var ix=cfg.tx,iy=cfg.ty;
+function P(px,py){if(!bul)return[px,py];var dx=px-ix,dy=py-iy,w=Math.exp(-(dx*dx+dy*dy)/1568);return[px+dx*bul*.02*w,py+dy*bul*.02*w+bul*.3*w]}
+ctx.fillStyle=dark?"rgba(255,255,255,.06)":"rgba(14,26,40,.08)";ctx.fillRect(NX0,NY0,NX1-NX0,NY1-NY0);
+ctx.strokeStyle=C.muted;ctx.globalAlpha=.55;ctx.lineWidth=1;
+function seg(x1,y1,x2,y2){if(R){var mx=(x1+x2)/2-ix,my=(y1+y2)/2-iy;if(mx*mx+my*my<R*R)return}var a1=P(x1,y1),a2=P(x2,y2);ctx.beginPath();ctx.moveTo(a1[0],a1[1]);ctx.lineTo(a2[0],a2[1]);ctx.stroke()}
+var x,y;for(x=NX0;x<=NX1;x+=14)for(y=NY0;y<NY1;y+=12)seg(x,y,x,y+12);
+for(y=NY0;y<=NY1;y+=12)for(x=NX0;x<NX1;x+=14)seg(x,y,x+14,y);
+ctx.globalAlpha=1;
+if(R>2){ctx.save();ctx.beginPath();ctx.rect(NX0,NY0,NX1-NX0,NY1-NY0);ctx.clip();ctx.beginPath();for(var q=0;q<14;q++){var ang=q/14*6.2832,rad=R*jag[q];ctx[q?"lineTo":"moveTo"](ix+Math.cos(ang)*rad,iy+Math.sin(ang)*rad)}ctx.closePath();ctx.fillStyle=gr;ctx.fill();ctx.strokeStyle=C.muted;ctx.lineWidth=1.5;ctx.stroke();ctx.restore()}
+ctx.strokeStyle=C.red;ctx.lineWidth=5;ctx.lineJoin="round";ctx.beginPath();ctx.moveTo(NX0,NY1);ctx.lineTo(NX0,NY0);ctx.lineTo(NX1,NY0);ctx.lineTo(NX1,NY1);ctx.stroke();
+var pk=puckAt(ms);
+if(pk.behind&&hit){st.hist.length=0;drawPuck(pk)}
+drawGoalie(goalieAt(ms));
+if(!pk.behind||!hit){st.hist.push([pk.x,pk.y,pk.s]);if(st.hist.length>cfg.tr+1)st.hist.shift();
+for(var h=0;h<st.hist.length-1;h++){var o=st.hist[h];ctx.globalAlpha=(h+1)/(st.hist.length+1)*.5;ctx.fillStyle=C.ink;ctx.beginPath();ctx.ellipse(o[0],o[1],11*o[2],6.5*o[2],0,0,7);ctx.fill()}ctx.globalAlpha=1;drawPuck(pk)}
+var tip,lt;if(ms<W0){tip=[SX-10-cfg.pw*eo(ms/W0),SY+6]}else{lt=cl((ms-W0)/70);tip=[SX-10-cfg.pw+(cfg.pw+16)*lt,SY+6]}
+ctx.strokeStyle=C.ink;ctx.lineWidth=4;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(SX+90,214);ctx.lineTo(tip[0],tip[1]);ctx.stroke();ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(tip[0],tip[1]);ctx.lineTo(tip[0]-10,tip[1]+1);ctx.stroke();ctx.lineCap="butt";
+if(t===4&&hit){if(!st.spawned){st.spawned=1;for(var n=0;n<26;n++){var an=Math.random()*6.2832,sp=120+Math.random()*200;st.shreds.push({x:ix,y:iy,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-60,len:6+Math.random()*10,r:Math.random()*6})}}
+var dt=Math.min(.05,(ms-st.last)/1000);for(var m=0;m<st.shreds.length;m++){var s=st.shreds[m];s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=520*dt;s.r+=dt*9;ctx.strokeStyle=C.muted;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x+Math.cos(s.r)*s.len,s.y+Math.sin(s.r)*s.len);ctx.stroke()}}
+st.last=ms;
+if(hit&&(t===3||t===4)&&a<1.6){var al=Math.max(0,1-a/1.6)*(.55+.45*Math.sin(a*30));ctx.save();ctx.globalAlpha=al;ctx.shadowColor=C.red;ctx.shadowBlur=22;ctx.fillStyle=C.red;ctx.beginPath();ctx.arc(180,44,8,0,7);ctx.fill();ctx.restore()}
+if(t===4&&hit){ctx.fillStyle="rgba(255,255,255,"+(.55*Math.exp(-a*7))+")";ctx.fillRect(-10,-10,380,220)}
+if(ms>TI+250){var ca=cl((ms-TI-250)/200);ctx.setTransform(k,0,0,k,0,0);ctx.globalAlpha=ca;ctx.font="800 17px 'Avenir Next Condensed','Arial Narrow','Helvetica Neue',sans-serif";ctx.textAlign="center";var tw=ctx.measureText(cfg.lab.toUpperCase()).width+26;ctx.fillStyle="rgba(10,18,32,.86)";rr(180-tw/2,6,tw,24,12);ctx.fill();ctx.fillStyle=t===4?C.gold:t===3?"#ff6b76":"#fff";ctx.textBaseline="middle";ctx.fillText(cfg.lab.toUpperCase(),180,19);ctx.globalAlpha=1}
+}
+var END=TI+1700,t0=0;
+function loop(now){if(!document.body.contains(cv))return;if(!t0)t0=now;var ms=now-t0;frame(Math.min(ms,END));if(ms<END)SHOT_RAF=requestAnimationFrame(loop)}
+cv.onclick=function(){shoot(t)};
+if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){st.last=END;frame(END);return}
+SHOT_RAF=requestAnimationFrame(loop)}
 async function grade(text,timedOut){if(S.busy)return;S.busy=1;var p=Q[S.i],idx=find(p,text),r={},html;
 if(idx<0||S.used[S.i+":"+idx]){r.t=-1;r.pts=0;if(idx<0)await live(p,"",0);
 html='<div class="tier">'+(timedOut?"Time’s up":idx<0?"No score":"Already used")+'</div><p>'+(timedOut?"You ran out of time.":idx<0?(text.trim()?"We couldn’t match “"+esc(text.trim())+"” to a valid answer.":"You left it blank."):"You already gave that answer.")+'</p>'}
@@ -197,9 +290,9 @@ else{S.used[S.i+":"+idx]=1;var a=p.a[idx],sh=await live(p,a[0],a[1]),t=tierFor(s
 html='<div class="tier t'+t+'">'+NAMES[t]+' · +'+r.pts+'</div><p><b>'+esc(a[0])+'</b> was picked by about '+sh.v+'% of '+sh.src+'.</p>'}
 S.total+=r.pts;S.res.push(r);
 var best=p.a.slice().sort(function(x,y){return x[1]-y[1]}).slice(0,3).map(function(x){return x[0]}).join(", ");
-app.innerHTML=rinkHTML()+'<div class="q">'+esc(p.q)+'</div><div class="res">'+html+'<p class="muted">Rarest answers on the board: '+esc(best)+'.</p></div>'+
+app.innerHTML=rinkHTML()+'<canvas id="shot" class="shot" width="360" height="200" role="img" aria-label="Shot animation: '+shotLab(r.t)+'"></canvas><div class="q">'+esc(p.q)+'</div><div class="res">'+html+'<p class="muted">Rarest answers on the board: '+esc(best)+'.</p></div>'+
 '<button id="nx">'+(S.i<Q.length-1?"Next question":"See final score")+'</button>';
-S.busy=0;document.getElementById("nx").focus();
+S.busy=0;document.getElementById("nx").focus();shoot(r.t);
 document.getElementById("nx").onclick=function(){S.i++;S.i<Q.length?ask():finish()}}
 function finish(){save();renderFinal()}
 function renderFinal(){var sq=S.res.map(function(r){return r.t<0?"⬜":["🟦","🟦","🟦","🟦","🟥"][r.t]===undefined?"⬜":(r.t===4?"🟥":r.t>=2?"🟦":"⬜")}).join("");
