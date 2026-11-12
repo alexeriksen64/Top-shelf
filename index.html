@@ -57,7 +57,7 @@ pre{white-space:pre-wrap;font:inherit;background:var(--ice);padding:14px;border-
 </head>
 <body>
 <main id="app"></main>
-<footer class="foot"><a href="legal.html#privacy">Privacy</a><a href="legal.html#terms">Terms</a><a href="legal.html#refunds">Refunds</a></footer>
+<footer class="foot"><a href="legal.html#privacy">Privacy</a><a href="legal.html#terms">Terms</a><a href="legal.html#refunds">Refunds</a><a href="#" id="snd">Sound: on</a></footer>
 <script>
 // Answer lists: [name, simulated share of players (%), aliases separated by |]
 // Paste your Supabase values here (Project Settings > API).
@@ -199,7 +199,7 @@ app.innerHTML=rinkHTML()+'<div class="rank"><span>Question '+(S.i+1)+' of '+Q.le
 var inp=document.getElementById("in");inp.focus();
 var tries=0,note=document.getElementById("note");
 function done(timedOut){clearInterval(timer);grade(timedOut?"":inp.value,timedOut)}
-function miss(v){tries++;if(tries>=TRIES){done(false);return}var n=TRIES-tries;note.textContent="No match for \u201c"+v.trim()+"\u201d. "+n+(n===1?" try":" tries")+" left.";inp.value="";inp.focus()}
+function miss(v){tries++;SND.bad();if(tries>=TRIES){done(false);return}var n=TRIES-tries;note.textContent="No match for \u201c"+v.trim()+"\u201d. "+n+(n===1?" try":" tries")+" left.";inp.value="";inp.focus()}
 function submit(){var v=inp.value;if(!v.trim()){inp.focus();return}
 if(find(p,v)>=0){done(false);return}
 var sg=suggest(p,v);if(sg<0){miss(v);return}
@@ -211,7 +211,46 @@ y.onclick=function(){clearInterval(timer);grade(nm,false)};
 no.onclick=function(){miss(v)}}
 document.getElementById("ok").onclick=submit;
 inp.onkeydown=function(e){if(e.key==="Enter")submit()};
-timer=setInterval(function(){left=TIME-(Date.now()-t0)/1000;document.getElementById("tb").style.width=Math.max(0,left/TIME*100)+"%";if(left<=0)done(true)},100)}
+var lastSc=0;timer=setInterval(function(){left=TIME-(Date.now()-t0)/1000;var sc=Math.ceil(left);if(left<=5&&left>0&&sc!==lastSc){lastSc=sc;SND.warn()}document.getElementById("tb").style.width=Math.max(0,left/TIME*100)+"%";if(left<=0)done(true)},100)}
+var SND=(function(){
+var ac=null,master=null,nb=null,on=true;
+try{on=localStorage.getItem("topshelf:sound")!=="off"}catch(e){}
+function C(){if(!ac){var K=window.AudioContext||window.webkitAudioContext;if(!K)return null;try{ac=new K()}catch(e){return null}
+master=ac.createGain();master.gain.value=.6;var cp=ac.createDynamicsCompressor();master.connect(cp);cp.connect(ac.destination)}
+if(ac.state==="suspended"){try{ac.resume()}catch(e){}}return ac}
+function buf(){if(nb)return nb;var n=ac.sampleRate*2,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=Math.random()*2-1;nb=b;return b}
+function tone(f0,f1,dur,type,vol,dl){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0),o=a.createOscillator(),g=a.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+dur);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.05)}
+function noise(dur,vol,f0,f1,type,dl,q){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0),s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=buf();f.type=type||"lowpass";f.Q.value=q||1;f.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)f.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f);f.connect(g);g.connect(master);s.start(t,Math.random());s.stop(t+dur+.05)}
+function swell(dur,vol,f,dl,att){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0),s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();s.buffer=buf();s.loop=true;fl.type="bandpass";fl.frequency.value=f;fl.Q.value=.6;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+(att||.3));g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(fl);fl.connect(g);g.connect(master);s.start(t);s.stop(t+dur+.05)}
+function horn(vol,dl){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0);[140,176].forEach(function(fr){var o=a.createOscillator(),lp=a.createBiquadFilter(),g=a.createGain();o.type="sawtooth";o.frequency.value=fr;lp.type="lowpass";lp.frequency.value=1100;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.04);g.gain.setValueAtTime(vol,t+.8);g.gain.exponentialRampToValueAtTime(.0001,t+1.15);o.connect(lp);lp.connect(g);g.connect(master);o.start(t);o.stop(t+1.2)})}
+var S={
+set:function(v){on=!!v;try{localStorage.setItem("topshelf:sound",on?"on":"off")}catch(e){}if(on){C();S.tick()}},
+isOn:function(){return on},
+unlock:function(){C()},
+tick:function(){tone(880,660,.05,"triangle",.16)},
+warn:function(){tone(1500,1500,.05,"square",.07)},
+bad:function(){tone(240,120,.22,"sawtooth",.14);tone(180,90,.22,"square",.06,.02)},
+shot:function(t,dur){var d=dur/1000,p=Math.max(0,t);
+noise(.07,.22+.07*p,3000,1200,"highpass",0,.7);tone(190,80,.07,"sine",.28+.05*p);
+noise(d+.12,.1+.05*p,500,2200+p*600,"bandpass",.02,2.5);
+if(t>=3)tone(300,1400,d+.05,"sine",.05+.02*p,.03)},
+hit:function(t){
+if(t===-1){tone(320,150,.09,"triangle",.2);noise(.08,.15,2500,900,"bandpass",0);return}
+if(t===0){tone(120,70,.14,"sine",.25);noise(.09,.1,700,300,"lowpass",0);return}
+if(t===1){tone(230,110,.12,"sine",.38);noise(.06,.2,3000,1500,"highpass",0);return}
+if(t===2){noise(.1,.45,2000,900,"bandpass",0,1.2);tone(170,55,.2,"sine",.5);noise(.12,.25,4000,2000,"highpass",.02);return}
+if(t===3){tone(1200,900,.25,"triangle",.18);noise(.4,.22,3200,800,"bandpass",.02,.8);horn(.2,.1);swell(1.8,.3,800,.05,.35);return}
+S.boom();horn(.26,.25);swell(2.6,.5,700,.1,.35)},
+boom:function(){noise(1.3,.9,3200,70,"lowpass",0,.8);tone(75,26,1.2,"sine",1);tone(140,40,.5,"sawtooth",.25);for(var i=0;i<16;i++)noise(.05,.16,5000,2500,"highpass",.05+Math.random()*.9)},
+slam:function(i){tone(100,32,.45,"sine",i===2?1:.8);noise(.35,i===2?.7:.5,1800,90,"lowpass",0,.8);tone(i===2?196:147,i===2?196:147,.5,"sawtooth",.1)},
+fanfare:function(r){var n=[392,494,587,784],i;for(i=0;i<n.length;i++)tone(n[i],n[i],.28,"triangle",.2,i*.12);if(r>=6){tone(988,988,.5,"triangle",.2,.5);tone(784,784,.5,"triangle",.15,.5)}if(r>=12){horn(.18,.6);swell(1.6,.25,800,.6,.3)}}
+};
+return S})();
+document.addEventListener("pointerdown",function(){SND.unlock()},{passive:true});
+document.addEventListener("click",function(e){var b=e.target&&e.target.closest&&e.target.closest("button,a.btn");if(b&&b.id!=="snd")SND.tick()},true);
+function sndLabel(){var a=document.getElementById("snd");if(a)a.textContent="Sound: "+(SND.isOn()?"on":"off")}
+document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("#snd");if(!a)return;e.preventDefault();SND.set(!SND.isOn());sndLabel()});
+sndLabel();
 var SHOT_RAF=0;
 var SHOTCFG={"-1":{dur:760,tx:332,ty:128,arc:0,pw:16,lab:"Wide of the net"},0:{dur:1500,tx:176,ty:142,arc:0,pw:14,lab:"Weak shot, easy save"},1:{dur:900,tx:198,ty:131,arc:5,pw:28,lab:"Saved"},2:{dur:540,tx:134,ty:99,arc:7,pw:42,lab:"Big save"},3:{dur:340,tx:236,ty:87,arc:7,pw:54,lab:"GOAL!"},4:{dur:210,tx:224,ty:101,arc:3,pw:68,lab:"THROUGH THE NET!"}};
 function shotLab(t){return SHOTCFG[t].lab}
@@ -349,14 +388,14 @@ function frame(ms){
 var a=(ms-TI)/1000,hit=ms>TI,dt=Math.min(.05,Math.max(0,(ms-last)/1000));last=ms;
 ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(k,0,0,k,0,0);
 if(hit&&t>=3){var zp=1+.05*Math.exp(-a*6),am=(t===4?9:3.5)*Math.exp(-a*(t===4?6:8));ctx.translate(CX,125);ctx.scale(zp,zp);ctx.translate(-CX,-125);ctx.translate((Math.random()-.5)*am,(Math.random()-.5)*am)}
-if(ms>=W0&&!fl.rel){fl.rel=1;if(t>=2)spray(SX-10,SY+8,6+t*3,60)}
-if(hit&&!fl.hit){fl.hit=1;var X=cfg.tx,Y=cfg.ty;
+if(ms>=W0&&!fl.rel){fl.rel=1;SND.shot(t,cfg.dur);if(t>=2)spray(SX-10,SY+8,6+t*3,60)}
+if(hit&&!fl.hit){fl.hit=1;var X=cfg.tx,Y=cfg.ty;SND.hit(t);
 if(t===0)spray(X,Y,6,40);
 else if(t===1){spray(X,Y,10,70);ring(X,Y,70,"#ffffff")}
 else if(t===2){spray(X,Y,16,110);sparks(X,Y,12,["#ffffff","#7fd8ff"]);ring(X,Y,110,"#7fd8ff")}
 else if(t===3){sparks(X,Y,34,["#ffd23f","#ff8a3d","#ffffff"]);confetti(70);ring(X,Y,170,"#ffd23f")}
 else if(t===4){for(var q=0;q<30;q++){var an=R(0,6.283),sp=R(120,320);add({k:"sh",x:X,y:Y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-70,l:1.6,m:1.6,s:R(6,16),r:R(0,6)})}sparks(X,Y,56,["#ffd23f","#fff6b8","#ffffff","#ff8a3d"]);confetti(120);ring(X,Y,220,"#ffe27a");ring(X,Y,140,"#ffffff")}}
-drawBG(ms,hit&&t>=3?Math.max(0,1-a/1.6):0);
+if(t===4&&hit){if(a>=.12&&!fl.s1){fl.s1=1;SND.slam(1)}if(a>=.54&&!fl.s2){fl.s2=1;SND.slam(2)}}drawBG(ms,hit&&t>=3?Math.max(0,1-a/1.6):0);
 drawNet(ms,a,hit);
 var pk=puckAt(ms);
 if(pk.b&&hit)drawPuck(pk,ms);
@@ -390,7 +429,7 @@ document.getElementById("info").onclick=go;setTimeout(go,2400)}
 function finish(){save();renderFinal()}
 function renderFinal(){var sq=S.res.map(function(r){return r.t<0?"⬜":["🟦","🟦","🟦","🟦","🟥"][r.t]===undefined?"⬜":(r.t===4?"🟥":r.t>=2?"🟦":"⬜")}).join("");
 var txt="Top Shelf "+(S.practice?"unlimited":DAY)+": "+S.total+" pts, "+rankFor(S.total)+"\n"+sq;
-app.innerHTML=rinkHTML()+'<h2>'+esc(rankFor(S.total))+'</h2><p class="muted">'+S.total+' of a possible '+MAX+' points.</p><div class="log" aria-hidden="true">'+
+SND.fanfare(LADDER.filter(function(l){return S.total>=l[1]}).length-1);app.innerHTML=rinkHTML()+'<h2>'+esc(rankFor(S.total))+'</h2><p class="muted">'+S.total+' of a possible '+MAX+' points.</p><div class="log" aria-hidden="true">'+
 S.res.map(function(r){return '<span class="t'+(r.t<0?0:r.t)+'"></span>'}).join("")+'</div><pre id="sh">'+esc(txt)+'</pre>'+
 '<button id="cp">Copy result</button><button class="alt" id="again">'+(S.practice?"Another round":UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>'+ACCT();
 document.getElementById("cp").onclick=function(){var b=this;try{navigator.clipboard.writeText(txt).then(function(){b.textContent="Copied"},function(){b.textContent="Select the text above to copy"})}catch(e){b.textContent="Select the text above to copy"}};
