@@ -39,12 +39,15 @@ a.btn{display:block;text-align:center;text-decoration:none;font-weight:600;font-
 .log{display:flex;gap:6px;margin:10px 0}
 .log span{flex:1;height:10px;border-radius:5px;background:var(--line)}
 .log .t0{background:var(--muted)}.log .t1{background:var(--blue);opacity:.5}.log .t2,.log .t3{background:var(--blue)}.log .t4{background:var(--red)}
+.foot{max-width:520px;margin:0 auto;padding:0 18px 32px;font-size:15px}
+.foot a{color:var(--muted);margin-right:16px}
 pre{white-space:pre-wrap;font:inherit;background:var(--ice);padding:12px;border-radius:10px;font-size:15px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <main id="app"></main>
+<footer class="foot"><a href="legal.html#privacy">Privacy</a><a href="legal.html#terms">Terms</a><a href="legal.html#refunds">Refunds</a></footer>
 <script>
 // Answer lists: [name, simulated share of players (%), aliases separated by |]
 // Paste your Supabase values here (Project Settings > API).
@@ -54,12 +57,42 @@ var PID=(function(){try{var k="topshelf:player",v=localStorage.getItem(k);if(!v)
 // Paste your Stripe Payment Link here (see the setup guide).
 var PAY_LINK="https://buy.stripe.com/test_dRm6oH9u4cFF1HdeYD2cg00";
 var UNL=!sb; // without a backend there is nothing to sell, so unlimited is open
-async function chkUnl(){try{var u=await sb.rpc("has_unlimited",{p_player:PID});UNL=!!u.data}catch(e){}}
+var LOCALPID=PID,USER=null;
+function setUser(u){USER=u||null;PID=USER?USER.id:LOCALPID}
+async function authInit(){if(!sb)return;try{var r=await sb.auth.getSession();setUser(r.data&&r.data.session?r.data.session.user:null)}catch(e){}
+try{sb.auth.onAuthStateChange(function(ev,ses){setUser(ses?ses.user:null)})}catch(e){}}
+function ACCT(){if(!sb)return"";return USER?'<p class="muted">Signed in as '+esc(USER.email||"your account")+' · <a href="#" id="so">Sign out</a></p>':'<p class="muted"><a href="#" id="si">Sign in</a> to keep unlimited mode on any device.</p>'}
+function bindAcct(){var a=document.getElementById("si"),b=document.getElementById("so");
+if(a)a.onclick=function(e){e.preventDefault();showSignIn(function(){start()})};
+if(b)b.onclick=async function(e){e.preventDefault();try{await sb.auth.signOut()}catch(x){}setUser(null);UNL=false;start()}}
+function showSignIn(next){var email="";
+function stepEmail(msg){app.innerHTML='<h2>Sign in</h2><p>Enter your email and we will send you a code. No password needed. Signing in keeps your unlimited mode on any device.</p><input id="em" type="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" placeholder="you@example.com" aria-label="Email address"><button id="sc">Send code</button><p class="muted" id="sm" role="status"></p><button class="alt" id="bk">Back</button>';
+var em=document.getElementById("em"),sc=document.getElementById("sc"),sm=document.getElementById("sm");
+if(email)em.value=email;sm.textContent=msg||"";
+document.getElementById("bk").onclick=function(){start()};
+async function send(){email=em.value.trim();if(!/^\S+@\S+\.\S+$/.test(email)){sm.textContent="Enter a valid email address.";return}
+sc.disabled=true;sm.textContent="Sending…";
+try{var r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
+if(r.error){sm.textContent=(r.error.status===429||/rate|too many|security purposes/i.test(r.error.message||""))?"Too many requests. Wait a few minutes and try again.":(r.error.message||"Could not send the code.");sc.disabled=false;return}
+stepCode()}catch(e){sm.textContent="Could not send the code. Check your connection and try again.";sc.disabled=false}}
+sc.onclick=send;em.onkeydown=function(e){if(e.key==="Enter")send()};em.focus()}
+function stepCode(msg){app.innerHTML='<h2>Check your email</h2><p>We sent a code to <b>'+esc(email)+'</b>. Enter it below. It can take a minute, and it may land in spam.</p><input id="ci" inputmode="numeric" autocomplete="one-time-code" placeholder="Code from the email" aria-label="Sign-in code"><button id="vc">Sign in</button><p class="muted" id="sm" role="status"></p><button class="alt" id="ch">Use a different email</button>';
+var ci=document.getElementById("ci"),vc=document.getElementById("vc"),sm=document.getElementById("sm");sm.textContent=msg||"";
+document.getElementById("ch").onclick=function(){stepEmail()};
+async function verify(){var t=ci.value.replace(/\s/g,"");if(t.length<6){sm.textContent="Enter the full code from the email.";return}
+vc.disabled=true;sm.textContent="Checking…";
+try{var r=await sb.auth.verifyOtp({email:email,token:t,type:"email"});
+if(r.error||!r.data||!r.data.session){sm.textContent="That code did not work. Check it, or go back and request a new one.";vc.disabled=false;return}
+setUser(r.data.session.user);await chkUnl();if(next)next();else start()}
+catch(e){sm.textContent="Could not check the code. Try again.";vc.disabled=false}}
+vc.onclick=verify;ci.onkeydown=function(e){if(e.key==="Enter")verify()};ci.focus()}
+stepEmail()}
+async function chkUnl(){UNL=false;if(!USER)return;try{var u=await sb.rpc("has_unlimited_me");UNL=!!u.data}catch(e){}}
 function UNLBTN(){return(!sb||S.practice)?"":'<button class="alt" id="unl">'+(UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>'}
-function openUnlimited(){if(UNL)start(true);else showPay()}
+function openUnlimited(){if(UNL){start(true);return}if(!USER){showSignIn(openUnlimited);return}showPay()}
 function showPay(){var ok=PAY_LINK.indexOf("YOUR")<0;
-app.innerHTML='<h2>Unlimited mode</h2><p>Play as many rounds as you like, with random questions from the whole pool. Your daily result stays separate.</p><p class="muted">$5, paid once. No subscription. Access is tied to this browser, so keep using the same one.</p>'+
-(ok?'<a class="btn" id="buy" href="'+PAY_LINK+'?client_reference_id='+encodeURIComponent(PID)+'">Buy for $5</a>':'<p class="muted">Payments are not set up on this site yet.</p>')+
+app.innerHTML='<h2>Unlimited mode</h2><p>Play as many rounds as you like, with random questions from the whole pool. Your daily result stays separate.</p><p class="muted">$5, paid once. No subscription. Access is tied to your email, so sign in with the same address on any device.</p><p class="muted">By buying you agree to the <a href="legal.html#terms">terms</a> and the <a href="legal.html#refunds">14-day refund policy</a>.</p>'+
+(ok?'<a class="btn" id="buy" href="'+PAY_LINK+'?client_reference_id='+encodeURIComponent(PID)+'&prefilled_email='+encodeURIComponent(USER?USER.email:"")+'">Buy for $5</a><p class="muted">Buying as '+esc(USER?USER.email:"")+'. Sign in with this email on any device to use it.</p>':'<p class="muted">Payments are not set up on this site yet.</p>')+
 '<button class="alt" id="bk">Back</button>';
 document.getElementById("bk").onclick=function(){start()}}
 // Records the answer and returns its rarity. Real counts are blended with the starting estimate until enough players have answered.
@@ -132,8 +165,8 @@ var sv=prac?null:load();
 if(sv){S.total=sv.total;S.res=sv.t.map(function(t){return{t:t,pts:t<0?0:PTS[t]}});renderFinal();return}
 intro()}
 function intro(){app.innerHTML='<h1>Top Shelf</h1><p class="muted">'+(S.practice?"Unlimited mode: random questions, as many rounds as you like. Your daily result stays as it is.":"Daily set for "+DAY+". Everyone gets the same questions today. The next set arrives at midnight local time.")+'</p><p class="q" style="font-weight:400">Seven hockey questions. Common answers barely score. The answers few people think of go top shelf.</p>'+
-'<p class="muted">You get '+TIME+' seconds per question. A correct answer scores by how rare it is. Wrong answers and repeats score nothing. Rarity starts from estimates and shifts toward real player answers as more people play.</p><button id="go">Drop the puck</button>'+UNLBTN();
-document.getElementById("go").onclick=ask;var u=document.getElementById("unl");if(u)u.onclick=openUnlimited}
+'<p class="muted">You get '+TIME+' seconds per question. A correct answer scores by how rare it is. Wrong answers and repeats score nothing. Rarity starts from estimates and shifts toward real player answers as more people play.</p><button id="go">Drop the puck</button>'+UNLBTN()+ACCT();
+document.getElementById("go").onclick=ask;var u=document.getElementById("unl");if(u)u.onclick=openUnlimited;bindAcct()}
 function ask(){var p=Q[S.i],left=TIME,t0=Date.now();
 app.innerHTML=rinkHTML()+'<div class="rank"><span>Question '+(S.i+1)+' of '+Q.length+'</span></div><div class="bar"><b id="tb"></b></div><div class="q">'+esc(p.q)+'</div>'+
 '<input id="in" autocomplete="off" autocapitalize="words" enterkeyhint="go" placeholder="Type your answer" aria-label="Your answer"><p class="muted" id="note" role="status">Up to '+TRIES+' tries.</p><button id="ok">Submit answer</button>';
@@ -169,11 +202,11 @@ function renderFinal(){var sq=S.res.map(function(r){return r.t<0?"⬜":["🟦","
 var txt="Top Shelf "+(S.practice?"unlimited":DAY)+": "+S.total+" pts, "+rankFor(S.total)+"\n"+sq;
 app.innerHTML=rinkHTML()+'<h2>'+esc(rankFor(S.total))+'</h2><p class="muted">'+S.total+' of a possible '+MAX+' points.</p><div class="log" aria-hidden="true">'+
 S.res.map(function(r){return '<span class="t'+(r.t<0?0:r.t)+'"></span>'}).join("")+'</div><pre id="sh">'+esc(txt)+'</pre>'+
-'<button id="cp">Copy result</button><button class="alt" id="again">'+(S.practice?"Another round":UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>';
+'<button id="cp">Copy result</button><button class="alt" id="again">'+(S.practice?"Another round":UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>'+ACCT();
 document.getElementById("cp").onclick=function(){var b=this;try{navigator.clipboard.writeText(txt).then(function(){b.textContent="Copied"},function(){b.textContent="Select the text above to copy"})}catch(e){b.textContent="Select the text above to copy"}};
-document.getElementById("again").onclick=function(){S.practice?start(true):openUnlimited()}}
+document.getElementById("again").onclick=function(){S.practice?start(true):openUnlimited()};bindAcct()}
 async function init(){if(sb){try{var r=await sb.rpc("server_day");if(r.data)DAY=r.data}catch(e){}
-await chkUnl();var back=/[?&]unlocked=1/.test(location.search);
+await authInit();await chkUnl();var back=/[?&]unlocked=1/.test(location.search);
 if(back&&!UNL){for(var k=0;k<6&&!UNL;k++){await new Promise(function(r2){setTimeout(r2,2000)});await chkUnl()}}
 if(back){try{history.replaceState(null,"",location.pathname)}catch(e){}}}
 start()}
