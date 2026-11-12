@@ -52,7 +52,7 @@ var SUPABASE_URL="https://xqspfqqwksuiqefeyzyt.supabase.co",SUPABASE_ANON_KEY="s
 var sb=(SUPABASE_URL.indexOf("YOUR")<0&&window.supabase)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 var PID=(function(){try{var k="topshelf:player",v=localStorage.getItem(k);if(!v){v=crypto.randomUUID();localStorage.setItem(k,v)}return v}catch(e){return crypto.randomUUID()}})();
 // Paste your Stripe Payment Link here (see the setup guide).
-var PAY_LINK="https://buy.stripe.com/YOUR-LINK";
+var PAY_LINK="https://buy.stripe.com/test_dRm6oH9u4cFF1HdeYD2cg00";
 var UNL=!sb; // without a backend there is nothing to sell, so unlimited is open
 async function chkUnl(){try{var u=await sb.rpc("has_unlimited",{p_player:PID});UNL=!!u.data}catch(e){}}
 function UNLBTN(){return(!sb||S.practice)?"":'<button class="alt" id="unl">'+(UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>'}
