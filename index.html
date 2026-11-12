@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Top Shelf: rare-answer hockey trivia</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+:root{--bg:#eef4f8;--surface:#fff;--ink:#12202b;--muted:#5b6b78;--line:#c9d6df;--red:#c8202f;--blue:#1c5fa8;--ice:#dbe9f3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1720;--surface:#16232e;--ink:#e8f0f6;--muted:#93a5b3;--line:#2b3d4b;--red:#ee4655;--blue:#5aa0e6;--ice:#1d2f3d}}
+:root[data-theme="dark"]{--bg:#0d1720;--surface:#16232e;--ink:#e8f0f6;--muted:#93a5b3;--line:#2b3d4b;--red:#ee4655;--blue:#5aa0e6;--ice:#1d2f3d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:520px;margin:0 auto;padding:20px 18px 40px}
+h1,h2,.big{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;font-weight:700;letter-spacing:.01em;line-height:1.05;margin:0}
+h1{font-size:56px}
+h2{font-size:32px}
+p{margin:.6em 0}
+.muted{color:var(--muted);font-size:15px}
+.rink{position:relative;height:44px;margin:6px 0 18px;border-radius:22px;background:var(--ice);border:2px solid var(--line);overflow:hidden}
+.rink::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;background:var(--red);opacity:.7}
+.rink i{position:absolute;top:0;bottom:0;width:4px;background:var(--blue);opacity:.6}
+.rink .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(28,95,168,.25));transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.puck{position:absolute;top:50%;width:26px;height:16px;margin:-8px 0 0 -13px;border-radius:50%;background:#111;border:2px solid #444;transition:left .7s cubic-bezier(.2,.8,.2,1)}
+.rank{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--line);margin:14px 0;overflow:hidden}
+.bar b{display:block;height:100%;background:var(--red);width:100%}
+.q{font-size:26px;line-height:1.2;margin:10px 0 16px;font-weight:600}
+input{width:100%;font:inherit;font-size:20px;padding:14px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+input:focus,button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button{font:inherit;font-weight:600;font-size:18px;padding:14px 20px;border:0;border-radius:12px;background:var(--red);color:#fff;cursor:pointer;margin-top:12px;width:100%}
+button.alt{background:transparent;color:var(--ink);border:2px solid var(--line)}
+a.btn{display:block;text-align:center;text-decoration:none;font-weight:600;font-size:18px;padding:14px 20px;border-radius:12px;background:var(--red);color:#fff;margin-top:12px}
+.res{background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+.tier{font-family:"Barlow Condensed",Impact,sans-serif;font-size:30px;font-weight:700}
+.t4{color:var(--red)}.t3{color:var(--blue)}
+.log{display:flex;gap:6px;margin:10px 0}
+.log span{flex:1;height:10px;border-radius:5px;background:var(--line)}
+.log .t0{background:var(--muted)}.log .t1{background:var(--blue);opacity:.5}.log .t2,.log .t3{background:var(--blue)}.log .t4{background:var(--red)}
+pre{white-space:pre-wrap;font:inherit;background:var(--ice);padding:12px;border-radius:10px;font-size:15px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<main id="app"></main>
+<script>
+// Answer lists: [name, simulated share of players (%), aliases separated by |]
+// Paste your Supabase values here (Project Settings > API).
+var SUPABASE_URL="https://xqspfqqwksuiqefeyzyt.supabase.co",SUPABASE_ANON_KEY="sb_publishable_tTVy0jJXXI3BYAVamVAOqg_veesKiDn";
+var sb=(SUPABASE_URL.indexOf("YOUR")<0&&window.supabase)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+var PID=(function(){try{var k="topshelf:player",v=localStorage.getItem(k);if(!v){v=crypto.randomUUID();localStorage.setItem(k,v)}return v}catch(e){return crypto.randomUUID()}})();
+// Paste your Stripe Payment Link here (see the setup guide).
+var PAY_LINK="https://buy.stripe.com/YOUR-LINK";
+var UNL=!sb; // without a backend there is nothing to sell, so unlimited is open
+async function chkUnl(){try{var u=await sb.rpc("has_unlimited",{p_player:PID});UNL=!!u.data}catch(e){}}
+function UNLBTN(){return(!sb||S.practice)?"":'<button class="alt" id="unl">'+(UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>'}
+function openUnlimited(){if(UNL)start(true);else showPay()}
+function showPay(){var ok=PAY_LINK.indexOf("YOUR")<0;
+app.innerHTML='<h2>Unlimited mode</h2><p>Play as many rounds as you like, with random questions from the whole pool. Your daily result stays separate.</p><p class="muted">$5, paid once. No subscription. Access is tied to this browser, so keep using the same one.</p>'+
+(ok?'<a class="btn" id="buy" href="'+PAY_LINK+'?client_reference_id='+encodeURIComponent(PID)+'">Buy for $5</a>':'<p class="muted">Payments are not set up on this site yet.</p>')+
+'<button class="alt" id="bk">Back</button>';
+document.getElementById("bk").onclick=function(){start()}}
+// Records the answer and returns its rarity. Real counts are blended with the starting estimate until enough players have answered.
+async function live(p,ans,seed){var v=seed,src="simulated players";
+if(sb){try{var r=await sb.rpc("record_answer",{p_player:PID,p_question:p.q,p_answer:ans});
+if(r.data&&ans){var K=20;v=Math.round((r.data.n+K*seed/100)/(r.data.total+K)*1000)/10;src="players, blended with starting estimates"}}catch(e){}}
+return{v:v,src:src}}
+var P=[
+{q:"Name a current Canadian NHL team.",a:[["Maple Leafs",30,"leafs|toronto|toronto maple leafs"],["Canadiens",24,"habs|montreal|montreal canadiens"],["Oilers",15,"edmonton|edmonton oilers"],["Canucks",10,"vancouver|vancouver canucks"],["Flames",8,"calgary|calgary flames"],["Jets",7,"winnipeg|winnipeg jets"],["Senators",6,"sens|ottawa|ottawa senators"]]},
+{q:"Name a Hall of Fame goalie.",a:[["Patrick Roy",28,"roy"],["Martin Brodeur",24,"brodeur"],["Dominik Hasek",14,"hasek"],["Ken Dryden",9,"dryden"],["Terry Sawchuk",7,"sawchuk"],["Jacques Plante",6,"plante"],["Grant Fuhr",4,"fuhr"],["Ed Belfour",3,"belfour"],["Glenn Hall",2,"hall"],["Tony Esposito",1.5,"esposito"],["Bernie Parent",1,"parent"],["Billy Smith",.8,"smith"],["Gump Worsley",.4,"worsley"]]},
+{q:"Name a penalty in hockey.",a:[["Tripping",22,"trip"],["Hooking",18,"hook"],["Slashing",14,"slash"],["High-sticking",12,"high stick|high sticking"],["Roughing",9,"rough"],["Cross-checking",7,"cross check|crosschecking"],["Interference",6,"interfere"],["Boarding",5,"board"],["Holding",4,"hold"],["Too many men",1.5,"too many players"],["Delay of game",1,"delay"],["Charging",.6,"charge"],["Spearing",.4,"spear"],["Elbowing",.3,"elbow"],["Embellishment",.2,"diving|dive"]]},
+{q:"Name a Hall of Fame forward.",a:[["Wayne Gretzky",30,"gretzky|the great one"],["Mario Lemieux",16,"lemieux"],["Gordie Howe",12,"howe"],["Mark Messier",8,"messier"],["Jaromir Jagr",7,"jagr"],["Steve Yzerman",6,"yzerman"],["Maurice Richard",5,"richard|rocket richard"],["Jean Beliveau",4,"beliveau"],["Mike Bossy",3,"bossy"],["Bobby Hull",3,"hull"],["Joe Sakic",2.5,"sakic"],["Guy Lafleur",2,"lafleur"],["Teemu Selanne",1.5,"selanne"],["Jari Kurri",1,"kurri"],["Doug Gilmour",.8,"gilmour"],["Peter Forsberg",.7,"forsberg"],["Phil Esposito",.5,"esposito"]]},
+{q:"Name a piece of hockey equipment.",a:[["Stick",26,"hockey stick"],["Skates",22,"skate"],["Helmet",14,"helmet"],["Gloves",10,"glove"],["Pads",7,"shin pads|leg pads|goalie pads"],["Jersey",6,"sweater"],["Mask",5,"goalie mask"],["Shoulder pads",3,"shoulder"],["Elbow pads",2,"elbow"],["Visor",1.5,"shield"],["Mouthguard",1,"mouth guard"],["Jock",.8,"cup|jockstrap"],["Blocker",.6,"goalie blocker"],["Trapper",.4,"catching glove|catcher"],["Neck guard",.3,"neck guard|bib"]]},
+{q:"Name an NHL arena, past or present.",a:[["Madison Square Garden",24,"msg"],["Bell Centre",15,"montreal forum|bell"],["Scotiabank Arena",12,"air canada centre|acc"],["TD Garden",10,"boston garden"],["United Center",8,"chicago stadium"],["Rogers Place",6,"rexall place"],["Joe Louis Arena",5,"joe louis"],["Maple Leaf Gardens",4,"mlg"],["Montreal Forum",3,"forum"],["Little Caesars Arena",2.5,"little caesars"],["Nassau Coliseum",2,"nassau veterans memorial coliseum"],["Saddledome",1.5,"scotiabank saddledome|calgary saddledome"],["Mellon Arena",1,"civic arena|igloo"],["Hartford Civic Center",.5,"xl center"]]},
+{q:"Name an NHL team that moved or folded.",a:[["Hartford Whalers",26,"whalers"],["Quebec Nordiques",24,"nordiques"],["Atlanta Thrashers",14,"thrashers"],["Minnesota North Stars",9,"north stars"],["Atlanta Flames",6,"flames atlanta"],["Colorado Rockies",4,"rockies"],["Winnipeg Jets original",3,"phoenix coyotes|arizona coyotes|coyotes"],["Oakland Seals",1.5,"seals|california golden seals|golden seals"],["Cleveland Barons",1,"barons"],["Kansas City Scouts",.8,"scouts"],["Hamilton Tigers",.4,"tigers"],["Philadelphia Quakers",.2,"quakers"]]},
+{q:"Name a Hart Trophy winner.",a:[["Connor McDavid",22,"mcdavid"],["Wayne Gretzky",20,"gretzky"],["Sidney Crosby",16,"crosby"],["Alex Ovechkin",12,"ovechkin|ovi"],["Mario Lemieux",9,"lemieux"],["Gordie Howe",6,"howe"],["Dominik Hasek",4,"hasek"],["Jaromir Jagr",3,"jagr"],["Bobby Orr",3,"orr"],["Leon Draisaitl",1.5,"draisaitl"],["Carey Price",1.5,"price"],["Patrick Kane",1.5,"kane"],["Nathan MacKinnon",1.2,"mackinnon"],["Auston Matthews",1,"matthews"],["Mark Messier",1,"messier"],["Bobby Clarke",.6,"clarke"],["Jean Beliveau",.4,"beliveau"]]},
+{q:"Name a hockey term.",a:[["Icing",20,"icing the puck"],["Offside",18,"offsides"],["Power play",15,"powerplay"],["Hat trick",12,"hattrick"],["Slap shot",8,"slapshot"],["Faceoff",7,"face off"],["Breakaway",6,"break away"],["Empty net",4,"pull the goalie"],["One-timer",3,"one timer|onetimer"],["Deke",2.5,"dangle"],["Five-hole",2,"five hole|fivehole"],["Forecheck",1.5,"fore check"],["Backcheck",1,"back check"],["Sin bin",.8,"penalty box"],["Saucer pass",.5,"saucer"],["Biscuit",.3,"puck slang"]]},
+{q:"Name a country outside North America that has produced an NHL player.",a:[["Sweden",28,"swedish"],["Russia",24,"russian|soviet union|ussr"],["Finland",18,"finnish"],["Czech Republic",12,"czechia|czechoslovakia|czech"],["Slovakia",6,"slovak"],["Switzerland",3.5,"swiss"],["Germany",3.5,"german"],["Latvia",1.5,"latvian"],["Denmark",1.5,"danish"],["Belarus",.5,"belarusian"],["Norway",.4,"norwegian"],["France",.3,"french"],["Slovenia",.3,"slovenian"],["Austria",.2,"austrian"],["Ukraine",.15,"ukrainian"],["Kazakhstan",.1,"kazakh"],["Japan",.05,"japanese"]]},
+{q:"Name a hockey movie.",a:[["The Mighty Ducks",30,"mighty ducks|d1"],["Miracle",25,"miracle on ice"],["Slap Shot",20,"slapshot"],["Goon",10,"goon 2"],["Youngblood",5,"young blood"],["Mystery, Alaska",3,"mystery alaska"],["Sudden Death",2,"jcvd"],["Les Boys",1.5,"lesboys"],["The Rocket",.8,"rocket|maurice richard"]]}
+];
+var TIERS=[["Common",0,10],["Solid",5,25],["Uncommon",2,50],["Rare",1,80],["Top shelf",0,120]];
+function tierFor(s){return s>=20?0:s>=10?1:s>=4?2:s>=1.5?3:4}
+var PTS=[10,25,50,80,120],NAMES=["Common","Solid","Uncommon","Rare","Top shelf"];
+var LADDER=[["Beer league",0],["Juniors",150],["AHL",300],["NHL",450],["Stanley Cup",600]];
+var MAX=840,TIME=25,TRIES=3;
+function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
+function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++){m[i]=[i]}for(j=0;j<=b.length;j++){m[0][j]=j}
+for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]==b[j-1]?0:1));return m[a.length][b.length]}
+function find(p,input){var n=norm(input);if(n.length<2)return -1;var i,k,keys;
+for(i=0;i<p.a.length;i++){keys=[p.a[i][0]].concat(p.a[i][2].split("|")).map(norm);if(keys.indexOf(n)>-1)return i}
+for(i=0;i<p.a.length;i++){keys=[p.a[i][0]].concat(p.a[i][2].split("|")).map(norm);
+for(k=0;k<keys.length;k++){if(keys[k].length>=5&&n.length>=5&&lev(n,keys[k])<=(keys[k].length>=9?2:1))return i}}
+return -1}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+var app=document.getElementById("app"),S,timer,Q;
+function d2(n){return n<10?"0"+n:""+n}
+var NOW=new Date(),DAY=NOW.getFullYear()+"-"+d2(NOW.getMonth()+1)+"-"+d2(NOW.getDate());
+function seedOf(s){var h=7,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0}return h}
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function pick(seed){var r=rng(seed),ix=[],i,j,t;for(i=0;i<P.length;i++)ix.push(i);
+for(i=ix.length-1;i>0;i--){j=Math.floor(r()*(i+1));t=ix[i];ix[i]=ix[j];ix[j]=t}
+return ix.slice(0,7).map(function(k){return P[k]})}
+function load(){try{var v=localStorage.getItem("topshelf:"+DAY);return v?JSON.parse(v):null}catch(e){return null}}
+function save(){if(S.practice)return;try{localStorage.setItem("topshelf:"+DAY,JSON.stringify({total:S.total,t:S.res.map(function(r){return r.t})}))}catch(e){}}
+function rankFor(t){var r=LADDER[0][0];LADDER.forEach(function(l){if(t>=l[1])r=l[0]});return r}
+function rinkHTML(){var pct=Math.min(100,S.total/600*100);
+return '<div class="rink" aria-hidden="true"><i style="left:25%"></i><i style="left:75%"></i><div class="fill" style="width:'+pct+'%"></div><div class="puck" style="left:calc(13px + '+pct+'% * .94)"></div></div>'+
+'<div class="rank"><span>'+rankFor(S.total)+'</span><span>'+S.total+' pts</span></div>'}
+function start(prac){clearInterval(timer);S={i:0,total:0,res:[],used:{},practice:!!prac};
+Q=prac?pick(Math.floor(Math.random()*1e9)):pick(seedOf(DAY));
+var sv=prac?null:load();
+if(sv){S.total=sv.total;S.res=sv.t.map(function(t){return{t:t,pts:t<0?0:PTS[t]}});renderFinal();return}
+intro()}
+function intro(){app.innerHTML='<h1>Top Shelf</h1><p class="muted">'+(S.practice?"Unlimited mode: random questions, as many rounds as you like. Your daily result stays as it is.":"Daily set for "+DAY+". Everyone gets the same questions today. The next set arrives at midnight local time.")+'</p><p class="q" style="font-weight:400">Seven hockey questions. Common answers barely score. The answers few people think of go top shelf.</p>'+
+'<p class="muted">You get '+TIME+' seconds per question. A correct answer scores by how rare it is. Wrong answers and repeats score nothing. Rarity starts from estimates and shifts toward real player answers as more people play.</p><button id="go">Drop the puck</button>'+UNLBTN();
+document.getElementById("go").onclick=ask;var u=document.getElementById("unl");if(u)u.onclick=openUnlimited}
+function ask(){var p=Q[S.i],left=TIME,t0=Date.now();
+app.innerHTML=rinkHTML()+'<div class="rank"><span>Question '+(S.i+1)+' of '+Q.length+'</span></div><div class="bar"><b id="tb"></b></div><div class="q">'+esc(p.q)+'</div>'+
+'<input id="in" autocomplete="off" autocapitalize="words" enterkeyhint="go" placeholder="Type your answer" aria-label="Your answer"><p class="muted" id="note" role="status">Up to '+TRIES+' tries.</p><button id="ok">Submit answer</button>';
+var inp=document.getElementById("in");inp.focus();
+var tries=0,note=document.getElementById("note");
+function done(timedOut){clearInterval(timer);grade(timedOut?"":inp.value,timedOut)}
+function submit(){var v=inp.value;if(!v.trim()){inp.focus();return}
+if(find(p,v)<0){tries++;if(tries>=TRIES){done(false);return}
+var n=TRIES-tries;note.textContent="No match for \u201c"+v.trim()+"\u201d. "+n+(n===1?" try":" tries")+" left.";inp.value="";inp.focus();return}
+done(false)}
+document.getElementById("ok").onclick=submit;
+inp.onkeydown=function(e){if(e.key==="Enter")submit()};
+timer=setInterval(function(){left=TIME-(Date.now()-t0)/1000;document.getElementById("tb").style.width=Math.max(0,left/TIME*100)+"%";if(left<=0)done(true)},100)}
+async function grade(text,timedOut){if(S.busy)return;S.busy=1;var p=Q[S.i],idx=find(p,text),r={},html;
+if(idx<0||S.used[S.i+":"+idx]){r.t=-1;r.pts=0;if(idx<0)await live(p,"",0);
+html='<div class="tier">'+(timedOut?"Time’s up":idx<0?"No score":"Already used")+'</div><p>'+(timedOut?"You ran out of time.":idx<0?(text.trim()?"We couldn’t match “"+esc(text.trim())+"” to a valid answer.":"You left it blank."):"You already gave that answer.")+'</p>'}
+else{S.used[S.i+":"+idx]=1;var a=p.a[idx],sh=await live(p,a[0],a[1]),t=tierFor(sh.v);r.t=t;r.pts=PTS[t];
+html='<div class="tier t'+t+'">'+NAMES[t]+' · +'+r.pts+'</div><p><b>'+esc(a[0])+'</b> was picked by about '+sh.v+'% of '+sh.src+'.</p>'}
+S.total+=r.pts;S.res.push(r);
+var best=p.a.slice().sort(function(x,y){return x[1]-y[1]}).slice(0,3).map(function(x){return x[0]}).join(", ");
+app.innerHTML=rinkHTML()+'<div class="q">'+esc(p.q)+'</div><div class="res">'+html+'<p class="muted">Rarest answers on the board: '+esc(best)+'.</p></div>'+
+'<button id="nx">'+(S.i<Q.length-1?"Next question":"See final score")+'</button>';
+S.busy=0;document.getElementById("nx").focus();
+document.getElementById("nx").onclick=function(){S.i++;S.i<Q.length?ask():finish()}}
+function finish(){save();renderFinal()}
+function renderFinal(){var sq=S.res.map(function(r){return r.t<0?"⬜":["🟦","🟦","🟦","🟦","🟥"][r.t]===undefined?"⬜":(r.t===4?"🟥":r.t>=2?"🟦":"⬜")}).join("");
+var txt="Top Shelf "+(S.practice?"unlimited":DAY)+": "+S.total+" pts, "+rankFor(S.total)+"\n"+sq;
+app.innerHTML=rinkHTML()+'<h2>'+esc(rankFor(S.total))+'</h2><p class="muted">'+S.total+' of a possible '+MAX+' points.</p><div class="log" aria-hidden="true">'+
+S.res.map(function(r){return '<span class="t'+(r.t<0?0:r.t)+'"></span>'}).join("")+'</div><pre id="sh">'+esc(txt)+'</pre>'+
+'<button id="cp">Copy result</button><button class="alt" id="again">'+(S.practice?"Another round":UNL?"Unlimited mode":"Unlimited mode · $5")+'</button>';
+document.getElementById("cp").onclick=function(){var b=this;try{navigator.clipboard.writeText(txt).then(function(){b.textContent="Copied"},function(){b.textContent="Select the text above to copy"})}catch(e){b.textContent="Select the text above to copy"}};
+document.getElementById("again").onclick=function(){S.practice?start(true):openUnlimited()}}
+async function init(){if(sb){try{var r=await sb.rpc("server_day");if(r.data)DAY=r.data}catch(e){}
+await chkUnl();var back=/[?&]unlocked=1/.test(location.search);
+if(back&&!UNL){for(var k=0;k<6&&!UNL;k++){await new Promise(function(r2){setTimeout(r2,2000)});await chkUnl()}}
+if(back){try{history.replaceState(null,"",location.pathname)}catch(e){}}}
+start()}
+init();
+</script>
+</body>
+</html>
