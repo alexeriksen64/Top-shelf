@@ -43,7 +43,12 @@ button.alt{background:var(--surface);color:var(--ink);border:2px solid var(--lin
 .log .t0{background:var(--muted)}.log .t1{background:var(--blue);opacity:.45}.log .t2{background:var(--blue)}.log .t3{background:var(--red)}.log .t4{background:var(--gold)}
 .foot{max-width:520px;margin:0 auto;padding:0 20px 36px;font-size:14px}
 .foot a{margin-right:18px}
-.shot{display:block;width:100%;aspect-ratio:9/5;border-radius:18px;border:2px solid var(--line);margin:12px 0 0;box-shadow:var(--shadow);cursor:pointer;background:var(--ice)}
+.shot{display:block;width:100%;aspect-ratio:36/25;border-radius:18px;border:2px solid var(--line);margin:12px 0 0;box-shadow:var(--shadow);cursor:pointer;background:var(--ice)}
+.rinksvg{display:block;width:100%;height:auto;margin:2px 0 6px;filter:drop-shadow(0 6px 14px rgba(14,26,40,.14))}
+.rank2{display:flex;justify-content:space-between;align-items:baseline;font-family:"Avenir Next Condensed","Arial Narrow","Helvetica Neue",sans-serif;font-size:28px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;line-height:1.1}
+.rank2 span{font:600 15px -apple-system,system-ui,sans-serif;color:var(--muted);letter-spacing:0;text-transform:none}
+.nxt{margin:2px 0 10px}
+.res{cursor:pointer}
 pre{white-space:pre-wrap;font:inherit;background:var(--ice);padding:14px;border-radius:14px;font-size:16px;line-height:1.6}
 @media (max-width:360px){h1{font-size:50px}.q{font-size:24px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -137,7 +142,7 @@ var P=[
 var TIERS=[["Common",0,10],["Solid",5,25],["Uncommon",2,50],["Rare",1,80],["Top shelf",0,120]];
 function tierFor(s){return s>=20?0:s>=10?1:s>=4?2:s>=1.5?3:4}
 var PTS=[10,25,50,80,120],NAMES=["Common","Solid","Uncommon","Rare","Top shelf"];
-var LADDER=[["Beer league",0],["Juniors",150],["AHL",300],["NHL",450],["Stanley Cup",600]];
+var LADDER=[["Pond hockey",0],["Mite",40],["Squirt",80],["Peewee",120],["Bantam",160],["Midget",200],["Junior B",240],["Junior A",280],["Major junior",320],["College",360],["ECHL",400],["AHL",440],["NHL call-up",480],["NHL regular",520],["All-Star",560],["Stanley Cup",600]];
 var MAX=840,TIME=25,TRIES=3;
 function norm(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++){m[i]=[i]}for(j=0;j<=b.length;j++){m[0][j]=j}
@@ -161,9 +166,25 @@ return ix.slice(0,7).map(function(k){return P[k]})}
 function load(){try{var v=localStorage.getItem("topshelf:"+DAY);return v?JSON.parse(v):null}catch(e){return null}}
 function save(){if(S.practice)return;try{localStorage.setItem("topshelf:"+DAY,JSON.stringify({total:S.total,t:S.res.map(function(r){return r.t})}))}catch(e){}}
 function rankFor(t){var r=LADDER[0][0];LADDER.forEach(function(l){if(t>=l[1])r=l[0]});return r}
-function rinkHTML(){var pct=Math.min(100,S.total/600*100);
-return '<div class="rink" aria-hidden="true"><i style="left:25%"></i><i style="left:75%"></i><div class="fill" style="width:'+pct+'%"></div><div class="puck" style="left:calc(13px + '+pct+'% * .94)"></div></div>'+
-'<div class="rank"><span>'+rankFor(S.total)+'</span><span>'+S.total+' pts</span></div>'}
+function rinkX(p){return 44+p*272}
+function rinkGo(){var pk=document.getElementById("pk"),tr=document.getElementById("trail");if(!pk||!tr)return;var p=Math.min(1,S.total/600);pk.style.transform="translateX("+(p*272)+"px)";tr.style.transform="scaleX("+Math.max(.001,p)+")";S.shown=S.total}
+function rinkHTML(){var from=Math.min(1,(S.shown||0)/600),nx=null,i;
+for(i=0;i<LADDER.length;i++)if(LADDER[i][1]>S.total){nx=LADDER[i];break}
+var tk="";LADDER.forEach(function(l){var x=rinkX(l[1]/600);tk+='<line x1="'+x+'" y1="127" x2="'+x+'" y2="136" style="stroke:var(--muted)" stroke-width="1.6" opacity=".75"/>'});
+var sv='<svg class="rinksvg" viewBox="0 0 360 150" aria-hidden="true"><defs><clipPath id="rk"><rect x="6" y="6" width="348" height="138" rx="42"/></clipPath><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>'+
+'<g clip-path="url(#rk)"><rect width="360" height="150" style="fill:var(--ice)"/><rect width="360" height="150" fill="url(#rg)"/>'+
+'<path d="M30 59 A16 16 0 0 1 30 91 Z" style="fill:var(--blue)" opacity=".28"/><path d="M330 59 A16 16 0 0 0 330 91 Z" style="fill:var(--blue)" opacity=".28"/>'+
+'<line x1="30" y1="0" x2="30" y2="150" style="stroke:var(--red)" stroke-width="2" opacity=".85"/><line x1="330" y1="0" x2="330" y2="150" style="stroke:var(--red)" stroke-width="2" opacity=".85"/>'+
+'<line x1="132" y1="0" x2="132" y2="150" style="stroke:var(--blue)" stroke-width="6" opacity=".8"/><line x1="228" y1="0" x2="228" y2="150" style="stroke:var(--blue)" stroke-width="6" opacity=".8"/>'+
+'<line x1="180" y1="0" x2="180" y2="150" style="stroke:var(--red)" stroke-width="6" opacity=".85"/><line x1="180" y1="0" x2="180" y2="150" stroke="#fff" stroke-width="2" stroke-dasharray="5 7" opacity=".7"/>'+
+'<circle cx="180" cy="75" r="23" fill="none" style="stroke:var(--blue)" stroke-width="2.5"/><circle cx="180" cy="75" r="3.5" style="fill:var(--blue)"/>'+
+[[82,36],[82,114],[278,36],[278,114]].map(function(c){return '<circle cx="'+c[0]+'" cy="'+c[1]+'" r="15" fill="none" style="stroke:var(--red)" stroke-width="2" opacity=".85"/><circle cx="'+c[0]+'" cy="'+c[1]+'" r="3" style="fill:var(--red)"/>'}).join("")+
+'<rect x="44" y="72" width="272" height="6" rx="3" id="trail" style="fill:var(--blue);opacity:.4;transform-box:fill-box;transform-origin:left center;transform:scaleX('+Math.max(.001,from)+');transition:transform 1.1s cubic-bezier(.2,.8,.2,1)"/>'+tk+'</g>'+
+'<rect x="16" y="63" width="14" height="24" fill="none" style="stroke:var(--red)" stroke-width="2.5"/><rect x="330" y="63" width="14" height="24" fill="none" style="stroke:var(--red)" stroke-width="2.5"/>'+
+'<rect x="6" y="6" width="348" height="138" rx="42" fill="none" style="stroke:var(--line)" stroke-width="6"/>'+
+'<g id="pk" style="transform:translateX('+(from*272)+'px);transition:transform 1.1s cubic-bezier(.2,.8,.2,1)"><ellipse cx="44" cy="80" rx="13" ry="5" fill="#000" opacity=".18"/><ellipse cx="44" cy="75" rx="13" ry="7.5" fill="#0b0b0d" stroke="#4a5361" stroke-width="2"/></g></svg>';
+setTimeout(rinkGo,60);
+return sv+'<div class="rank2"><b>'+rankFor(S.total)+'</b><span>'+S.total+' pts</span></div><p class="muted nxt">'+(nx?"Next: "+nx[0]+" at "+nx[1]+" pts":"Top rank reached")+'</p>'}
 function start(prac){clearInterval(timer);S={i:0,total:0,res:[],used:{},practice:!!prac};
 Q=prac?pick(Math.floor(Math.random()*1e9)):pick(seedOf(DAY));
 var sv=prac?null:load();
@@ -192,9 +213,9 @@ document.getElementById("ok").onclick=submit;
 inp.onkeydown=function(e){if(e.key==="Enter")submit()};
 timer=setInterval(function(){left=TIME-(Date.now()-t0)/1000;document.getElementById("tb").style.width=Math.max(0,left/TIME*100)+"%";if(left<=0)done(true)},100)}
 var SHOT_RAF=0;
-var SHOTCFG={"-1":{dur:700,tx:350,ty:92,arc:0,tr:2,pw:16,lab:"Wide of the net"},0:{dur:1400,tx:176,ty:116,arc:0,tr:0,pw:14,lab:"Weak shot, easy save"},1:{dur:850,tx:196,ty:106,arc:4,tr:3,pw:26,lab:"Saved"},2:{dur:520,tx:140,ty:76,arc:6,tr:6,pw:40,lab:"Big save"},3:{dur:330,tx:228,ty:64,arc:6,tr:9,pw:52,lab:"GOAL!"},4:{dur:200,tx:218,ty:78,arc:2,tr:14,pw:66,lab:"THROUGH THE NET!"}};
+var SHOTCFG={"-1":{dur:700,tx:310,ty:92,arc:0,tr:2,pw:16,lab:"Wide of the net"},0:{dur:1400,tx:176,ty:116,arc:0,tr:0,pw:14,lab:"Weak shot, easy save"},1:{dur:850,tx:196,ty:106,arc:4,tr:3,pw:26,lab:"Saved"},2:{dur:520,tx:140,ty:76,arc:6,tr:6,pw:40,lab:"Big save"},3:{dur:330,tx:228,ty:64,arc:6,tr:9,pw:52,lab:"GOAL!"},4:{dur:200,tx:218,ty:78,arc:2,tr:14,pw:66,lab:"THROUGH THE NET!"}};
 function shotLab(t){return SHOTCFG[t].lab}
-function shoot(t){
+function shoot(t,pts){
 var cv=document.getElementById("shot");if(!cv||!cv.getContext)return;
 cancelAnimationFrame(SHOT_RAF);
 var cfg=SHOTCFG[t];if(!cfg)return;
@@ -202,8 +223,8 @@ var cs=getComputedStyle(document.documentElement),C={};
 ["ink","red","blue","gold","ice","line","muted","bg"].forEach(function(k){C[k]=cs.getPropertyValue("--"+k).trim()});
 var bgc=C.bg.replace("#","");var dark=bgc.length>=6&&(parseInt(bgc.substr(0,2),16)*0.3+parseInt(bgc.substr(2,2),16)*0.6+parseInt(bgc.substr(4,2),16)*0.1)<90;
 var dpr=Math.min(window.devicePixelRatio||1,3),cw=cv.clientWidth||360;
-cv.width=Math.round(cw*dpr);cv.height=Math.round(cw*dpr*200/360);
-var ctx=cv.getContext("2d"),k=cv.width/360;
+cv.width=Math.round(cw*dpr);cv.height=Math.round(cw*dpr*250/360);
+var ctx=cv.getContext("2d"),k=cv.width/360,Z=1.25;
 var SX=180,SY=184,W0=300,TI=W0+cfg.dur,NX0=110,NX1=250,NY0=56,NY1=134;
 var jag=[];for(var j=0;j<14;j++)jag.push(.75+Math.random()*.5);
 var st={hist:[],shreds:[],spawned:0,last:0};
@@ -246,7 +267,7 @@ ctx.fillStyle="#0b0b0d";ctx.strokeStyle="#4a5361";ctx.lineWidth=1.2;
 ctx.beginPath();ctx.ellipse(p.x,p.y,11*p.s,6.5*p.s,0,0,7);ctx.fill();ctx.stroke()}
 function frame(ms){
 var a=(ms-TI)/1000,hit=ms>TI;
-ctx.setTransform(k,0,0,k,0,0);ctx.clearRect(0,0,360,200);
+ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(k*Z,0,0,k*Z,k*(180-180*Z),k*(125-105*Z));
 if(hit&&(t===3||t===4)){var amp=(t===4?9:3)*Math.exp(-a*(t===4?7:8));ctx.translate((Math.random()-.5)*amp,(Math.random()-.5)*amp)}
 var gr=ctx.createLinearGradient(0,0,0,200);gr.addColorStop(0,C.ice);gr.addColorStop(1,dark?"#1d3250":"#fff");
 ctx.fillStyle=gr;ctx.fillRect(-10,-10,380,220);
@@ -276,11 +297,11 @@ var dt=Math.min(.05,(ms-st.last)/1000);for(var m=0;m<st.shreds.length;m++){var s
 st.last=ms;
 if(hit&&(t===3||t===4)&&a<1.6){var al=Math.max(0,1-a/1.6)*(.55+.45*Math.sin(a*30));ctx.save();ctx.globalAlpha=al;ctx.shadowColor=C.red;ctx.shadowBlur=22;ctx.fillStyle=C.red;ctx.beginPath();ctx.arc(180,44,8,0,7);ctx.fill();ctx.restore()}
 if(t===4&&hit){ctx.fillStyle="rgba(255,255,255,"+(.55*Math.exp(-a*7))+")";ctx.fillRect(-10,-10,380,220)}
-if(ms>TI+250){var ca=cl((ms-TI-250)/200);ctx.setTransform(k,0,0,k,0,0);ctx.globalAlpha=ca;ctx.font="800 17px 'Avenir Next Condensed','Arial Narrow','Helvetica Neue',sans-serif";ctx.textAlign="center";var tw=ctx.measureText(cfg.lab.toUpperCase()).width+26;ctx.fillStyle="rgba(10,18,32,.86)";rr(180-tw/2,6,tw,24,12);ctx.fill();ctx.fillStyle=t===4?C.gold:t===3?"#ff6b76":"#fff";ctx.textBaseline="middle";ctx.fillText(cfg.lab.toUpperCase(),180,19);ctx.globalAlpha=1}
+if(ms>TI+250){var ca=cl((ms-TI-250)/200);ctx.setTransform(k,0,0,k,0,0);ctx.globalAlpha=ca;var LBL=cfg.lab.toUpperCase()+(pts>0?"  +"+pts:"");ctx.font="800 17px 'Avenir Next Condensed','Arial Narrow','Helvetica Neue',sans-serif";ctx.textAlign="center";var tw=ctx.measureText(LBL).width+26;ctx.fillStyle="rgba(10,18,32,.86)";rr(180-tw/2,6,tw,24,12);ctx.fill();ctx.fillStyle=t===4?C.gold:t===3?"#ff6b76":"#fff";ctx.textBaseline="middle";ctx.fillText(LBL,180,19);ctx.globalAlpha=1}
 }
 var END=TI+1700,t0=0;
 function loop(now){if(!document.body.contains(cv))return;if(!t0)t0=now;var ms=now-t0;frame(Math.min(ms,END));if(ms<END)SHOT_RAF=requestAnimationFrame(loop)}
-cv.onclick=function(){shoot(t)};
+cv.onclick=function(){shoot(t,pts)};
 if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){st.last=END;frame(END);return}
 SHOT_RAF=requestAnimationFrame(loop)}
 async function grade(text,timedOut){if(S.busy)return;S.busy=1;var p=Q[S.i],idx=find(p,text),r={},html;
@@ -290,10 +311,12 @@ else{S.used[S.i+":"+idx]=1;var a=p.a[idx],sh=await live(p,a[0],a[1]),t=tierFor(s
 html='<div class="tier t'+t+'">'+NAMES[t]+' · +'+r.pts+'</div><p><b>'+esc(a[0])+'</b> was picked by about '+sh.v+'% of '+sh.src+'.</p>'}
 S.total+=r.pts;S.res.push(r);
 var best=p.a.slice().sort(function(x,y){return x[1]-y[1]}).slice(0,3).map(function(x){return x[0]}).join(", ");
-app.innerHTML=rinkHTML()+'<canvas id="shot" class="shot" width="360" height="200" role="img" aria-label="Shot animation: '+shotLab(r.t)+'"></canvas><div class="q">'+esc(p.q)+'</div><div class="res">'+html+'<p class="muted">Rarest answers on the board: '+esc(best)+'.</p></div>'+
-'<button id="nx">'+(S.i<Q.length-1?"Next question":"See final score")+'</button>';
-S.busy=0;document.getElementById("nx").focus();shoot(r.t);
-document.getElementById("nx").onclick=function(){S.i++;S.i<Q.length?ask():finish()}}
+app.innerHTML=rinkHTML()+'<div class="q">'+esc(p.q)+'</div><div class="res" id="info">'+html+'<p class="muted">Rarest answers on the board: '+esc(best)+'.</p></div>';
+S.busy=0;var nxl=S.i<Q.length-1?"Next question":"See final score",went=0;
+function go(){if(went||!document.getElementById("info"))return;went=1;
+app.innerHTML=rinkHTML()+'<canvas id="shot" class="shot" width="360" height="250" role="img" aria-label="Shot animation: '+shotLab(r.t)+'"></canvas><button id="nx">'+nxl+'</button>';
+var nb=document.getElementById("nx");nb.onclick=function(){S.i++;S.i<Q.length?ask():finish()};nb.focus();shoot(r.t,r.pts)}
+document.getElementById("info").onclick=go;setTimeout(go,2400)}
 function finish(){save();renderFinal()}
 function renderFinal(){var sq=S.res.map(function(r){return r.t<0?"⬜":["🟦","🟦","🟦","🟦","🟥"][r.t]===undefined?"⬜":(r.t===4?"🟥":r.t>=2?"🟦":"⬜")}).join("");
 var txt="Top Shelf "+(S.practice?"unlimited":DAY)+": "+S.total+" pts, "+rankFor(S.total)+"\n"+sq;
