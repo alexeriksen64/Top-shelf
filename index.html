@@ -247,7 +247,7 @@ var ac=null,master=null,nb=null,on=true;
 try{on=localStorage.getItem("topshelf:sound")!=="off"}catch(e){}
 function C(){if(!ac){var K=window.AudioContext||window.webkitAudioContext;if(!K)return null;try{ac=new K()}catch(e){return null}
 master=ac.createGain();master.gain.value=.6;var cp=ac.createDynamicsCompressor();master.connect(cp);cp.connect(ac.destination)}
-if(ac.state==="suspended"){try{ac.resume()}catch(e){}}return ac}
+if(ac.state!=="running"){try{ac.resume()}catch(e){}}return ac}
 function buf(){if(nb)return nb;var n=ac.sampleRate*2,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=Math.random()*2-1;nb=b;return b}
 function tone(f0,f1,dur,type,vol,dl){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0),o=a.createOscillator(),g=a.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+dur);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.05)}
 function noise(dur,vol,f0,f1,type,dl,q){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0),s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=buf();f.type=type||"lowpass";f.Q.value=q||1;f.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)f.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f);f.connect(g);g.connect(master);s.start(t,Math.random());s.stop(t+dur+.05)}
@@ -256,7 +256,7 @@ function horn(vol,dl){var a=C();if(!a||!on)return;var t=a.currentTime+(dl||0);[1
 var S={
 set:function(v){on=!!v;try{localStorage.setItem("topshelf:sound",on?"on":"off")}catch(e){}if(on){C();S.tick()}},
 isOn:function(){return on},
-unlock:function(){C()},
+unlock:function(){var a=C();if(!a)return;try{var b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}},wake:function(){if(ac&&ac.state!=="running"){try{ac.resume()}catch(e){}}},
 tick:function(){tone(880,660,.05,"triangle",.16)},
 warn:function(){tone(1500,1500,.05,"square",.07)},
 bad:function(){tone(240,120,.22,"sawtooth",.14);tone(180,90,.22,"square",.06,.02)},
@@ -276,7 +276,7 @@ slam:function(i){tone(100,32,.45,"sine",i===2?1:.8);noise(.35,i===2?.7:.5,1800,9
 fanfare:function(r){var n=[392,494,587,784],i;for(i=0;i<n.length;i++)tone(n[i],n[i],.28,"triangle",.2,i*.12);if(r>=6){tone(988,988,.5,"triangle",.2,.5);tone(784,784,.5,"triangle",.15,.5)}if(r>=12){horn(.18,.6);swell(1.6,.25,800,.6,.3)}}
 };
 return S})();
-document.addEventListener("pointerdown",function(){SND.unlock()},{passive:true});
+["pointerdown","touchend","click"].forEach(function(ev){document.addEventListener(ev,function(){SND.unlock()},{passive:true})});document.addEventListener("visibilitychange",function(){if(!document.hidden)SND.wake()});window.addEventListener("pageshow",function(){SND.wake()});
 document.addEventListener("click",function(e){var b=e.target&&e.target.closest&&e.target.closest("button,a.btn");if(b&&b.id!=="snd")SND.tick()},true);
 function sndLabel(){var a=document.getElementById("snd");if(a)a.textContent="Sound: "+(SND.isOn()?"on":"off")}
 document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("#snd");if(!a)return;e.preventDefault();SND.set(!SND.isOn());sndLabel()});
