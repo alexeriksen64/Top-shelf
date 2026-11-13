@@ -84,7 +84,7 @@ var SUPABASE_URL="https://xqspfqqwksuiqefeyzyt.supabase.co",SUPABASE_ANON_KEY="s
 var sb=(SUPABASE_URL.indexOf("YOUR")<0&&window.supabase)?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 var PID=(function(){try{var k="topshelf:player",v=localStorage.getItem(k);if(!v){v=crypto.randomUUID();localStorage.setItem(k,v)}return v}catch(e){return crypto.randomUUID()}})();
 // Paste your Stripe Payment Link here (see the setup guide).
-var PAY_LINK="https://buy.stripe.com/test_dRm6oH9u4cFF1HdeYD2cg00";
+var PAY_LINK="https://buy.stripe.com/5kQ5kD2Z1gqY4Ew8qMdwc00";
 var UNL=!sb; // without a backend there is nothing to sell, so unlimited is open
 var LOCALPID=PID,USER=null;
 function setUser(u){USER=u||null;PID=USER?USER.id:LOCALPID}
